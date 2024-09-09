@@ -196,35 +196,41 @@ class SonicPiController:
             if not isinstance(actions, list):
                 actions = [actions]
             
-            results = []
+            all_code = []
+            other_actions = []
+            
             for action in actions:
                 if isinstance(action, dict) and 'action' in action:
                     if action['action'] == 'generate_code':
-                        if self.current_code and 'new_song' not in [a.get('action') for a in actions]:
-                            self.current_code += "\n\n" + action['code']
-                        else:
-                            self.current_code = action['code']
-                        result = self.handle_code_generation(self.current_code)
-                        # Wrap the code in triple backticks for frontend highlighting
-                        result = f"Code executed successfully:\n```\n{self.current_code}\n```"
-                    elif action['action'] == 'stop':
-                        result = self.stop_sonic_pi()
-                        if result is None:
-                            result = "Music stopped."
-                    elif action['action'] == 'new_song':
-                        self.stop_sonic_pi()
-                        self.create_session_folder()
-                        self.current_code = ""
-                        result = "Ready for a new song."
-                    elif action['action'] == 'undo':
-                        result = "Undo functionality not implemented yet."
-                    elif action['action'] == 'user_inquiry':
-                        result = f"Information: {action['response']}"
+                        all_code.append(action['code'])
                     else:
-                        result = f"Unknown action: {action['action']}"
-                    results.append(result)
+                        other_actions.append(action)
+            
+            results = []
+            
+            # Handle non-code actions
+            for action in other_actions:
+                if action['action'] == 'stop':
+                    result = self.stop_sonic_pi()
+                    results.append("Music stopped." if result is None else result)
+                elif action['action'] == 'new_song':
+                    self.stop_sonic_pi()
+                    self.create_session_folder()
+                    self.current_code = ""
+                    results.append("Ready for a new song.")
+                elif action['action'] == 'undo':
+                    results.append("Undo functionality not implemented yet.")
+                elif action['action'] == 'user_inquiry':
+                    results.append(f"Information: {action['response']}")
                 else:
-                    results.append("Invalid action format")
+                    results.append(f"Unknown action: {action['action']}")
+            
+            # Combine and execute all code
+            if all_code:
+                combined_code = "\n\n".join(all_code)
+                self.current_code = combined_code
+                execution_result = self.handle_code_generation(combined_code)
+                results.append(execution_result)
             
             return "\n".join(results)
         except json.JSONDecodeError as e:
@@ -245,15 +251,13 @@ class SonicPiController:
         self.message_history = []
 
     def handle_code_generation(self, code):
-        if not self.session_folder:
-            self.create_session_folder()
         self.save_code(code)
         error = self.execute_sonic_pi_code(code)
         if error:
             logging.error(f"Error executing code: {error}")
             return f"Error executing code: {error}"
         logging.info("Code executed successfully")
-        return f"Code executed successfully:\n{code}"
+        return f"Code executed successfully:\n```\n{code}\n```"
 
     def save_current_code(self):
         if not self.current_code:

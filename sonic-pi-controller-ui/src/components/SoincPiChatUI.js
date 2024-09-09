@@ -44,17 +44,17 @@ const SonicPiChatUI = () => {
     const [inputMessage, setInputMessage] = useState('');
 
     useEffect(() => {
-        const fetchChatHistory = async () => {
+      const fetchChatHistory = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/chat-history`);
-            const data = await response.json();
-            setChatHistory(data);
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/chat-history`);
+          const data = await response.json();
+          setChatHistory(data);
         } catch (error) {
-            console.error('Failed to fetch chat history:', error);
+          console.error('Failed to fetch chat history:', error);
         }
-        };
-
-        fetchChatHistory();
+      };
+  
+      fetchChatHistory();
     }, []);
 
     const handleSendMessage = async () => {
