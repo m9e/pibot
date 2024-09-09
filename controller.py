@@ -185,10 +185,18 @@ class SonicPiController:
             except json.JSONDecodeError as e:
                 if attempt < self.max_retries - 1:
                     error_message = f"Your last response was not valid JSON. Please fix and respond again. Error: {str(e)}"
-                    user_input = f"{user_input}\n\nError in previous response: {error_message}"
+                    logging.warning(f"Attempt {attempt + 1} failed: {error_message}")
+                    user_input = f"{user_input}\n\nError in previous response: {error_message}\nPlease provide a valid JSON response."
+                    system_message += "\nEnsure your response is a valid JSON array of action objects."
                 else:
                     logging.error(f"Failed to get valid JSON after {self.max_retries} attempts.")
-                    return '{"action": "error", "message": "Failed to generate valid response after multiple attempts."}'
+                    return json.dumps([{
+                        "action": "error",
+                        "message": f"Failed to generate valid JSON response after {self.max_retries} attempts."
+                    }])
+
+        # This line should never be reached, but just in case:
+        return json.dumps([{"action": "error", "message": "Unexpected error in retry mechanism."}])
         
     def process_llm_response(self, response: str) -> str:
         try:
@@ -222,6 +230,8 @@ class SonicPiController:
                     results.append("Undo functionality not implemented yet.")
                 elif action['action'] == 'user_inquiry':
                     results.append(f"Information: {action['response']}")
+                elif action['action'] == 'error':
+                    results.append(f"Error: {action.get('message', 'Unknown error')}")
                 else:
                     results.append(f"Unknown action: {action['action']}")
             
