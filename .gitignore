@@ -3,6 +3,8 @@
 __pycache__/
 *.py[cod]
 
+saved/[!1].pi
+
 # no need in parent
 node_modules/
 
