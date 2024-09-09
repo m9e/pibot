@@ -42,15 +42,25 @@ const CodeBlock = ({ code }) => (
 const SonicPiChatUI = () => {
     const [chatHistory, setChatHistory] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
-
+    const [error, setError] = useState(null);
     useEffect(() => {
       const fetchChatHistory = async () => {
         try {
           const response = await fetch(`${process.env.REACT_APP_API_URL}/api/chat-history`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
           const data = await response.json();
-          setChatHistory(data);
+          if (Array.isArray(data)) {
+            setChatHistory(data);
+          } else {
+            console.error('Received non-array data:', data);
+            setChatHistory([]);
+          }
         } catch (error) {
           console.error('Failed to fetch chat history:', error);
+          setError('Failed to load chat history. Please try again later.');
+          setChatHistory([]);
         }
       };
   
