@@ -1,0 +1,4 @@
+live_loop :beat do
+  sample :bd_haus, amp: 2  # Kick drum sound
+  sleep 0.5  # Wait half a second before repeating
+end

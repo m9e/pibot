@@ -1,0 +1,61 @@
+use_debug false
+
+notes = (scale :e1, :minor_pentatonic, num_octaves: 2).shuffle
+
+live_loop :rerezzed do
+  tick_reset
+  t = 0.04
+  sleep -t
+  with_fx :bitcrusher do
+    s = synth :dsaw, note: :e3, sustain: 8, note_slide: t, release: 0
+    64.times do
+      sleep 0.125
+      control s, note: notes.tick
+    end
+  end
+  sleep 10
+end
+
+live_loop :industry do
+  sample :loop_industrial, beat_stretch: 1
+  sleep 1
+end
+
+live_loop :drive do
+  sample :bd_haus, amp: 3
+  sleep 0.5
+end
+
+# House background
+use_bpm 120
+
+# Kick drum pattern
+live_loop :kick do
+  sample :bd_haus, amp: 2
+  sleep 1
+end
+
+# Hi-hat pattern
+live_loop :hihat do
+  sync :kick
+  sample :drum_cymbal_closed, amp: 1, rate: 1.5
+  sleep 0.5
+end
+
+# Snare pattern
+live_loop :snare do
+  sync :kick
+  sleep 0.5
+  sample :sn_generic, amp: 1.5
+  sleep 1
+  sample :sn_generic, amp: 1.5
+  sleep 0.5
+end
+
+# Bassline pattern
+use_synth :tb303
+live_loop :bass do
+  sync :kick
+  play_pattern_timed [:c2, :e2, :g2, :b2], [0.25, 0.25, 0.25, 0.75], release: 0.5, cutoff: 100
+  sleep 1
+end

@@ -1,0 +1,1285 @@
+// algomancer/sonic_dreams.pi
+# rand-seed-ver 33
+#
+# Coded by Sam Aaron
+#
+# Video: https://vimeo.com/110416910
+
+use_debug false
+load_samples [:bd_haus, :elec_blip, :ambi_lunar_land]
+
+define :ocean do |num, amp_mul=1|
+  num.times do
+    s = synth [:bnoise, :cnoise, :gnoise].choose, amp: rrand(0.5, 1.5) * amp_mul, attack: rrand(0, 1), sustain: rrand(0, 2), release: rrand(0, 5) + 0.5, cutoff_slide: rrand(0, 5), cutoff: rrand(60, 100), pan: rrand(-1, 1), pan_slide: 1
+    control s, pan: rrand(-1, 1), cutoff: rrand(60, 110)
+    sleep rrand(0.5, 4)
+  end
+end
+
+define :echoes do |num, tonics, co=100, res=0.9, amp=1|
+  num.times do
+    play chord(tonics.choose, :minor).choose, res: res, cutoff: rrand(co - 20, co + 20), amp: 0.5 * amp, attack: 0, release: rrand(0.5, 1.5), pan: rrand(-0.7, 0.7)
+    sleep [0.25, 0.5, 0.5, 0.5, 1, 1].choose
+  end
+end
+
+define :bd do
+  cue :in_relentless_cycles
+  16.times do
+    sample :bd_haus, amp: 4, cutoff: 100
+    sleep 0.5
+  end
+  cue :winding_everywhichway
+  2.times do
+    2.times do
+      sample :bd_haus, amp: 4, cutoff: 100
+      sleep 0.25
+    end
+    sample :ambi_lunar_land
+    sleep 0.25
+  end
+end
+
+define :drums do |level, b_level=1, rand_cf=false|
+  synth :fm, note: :e2, release: 0.1, amp: b_level * 3, cutoff: 130
+  co = rand_cf ? rrand(110, 130) : 130
+  a  = rand_cf ? rrand(0.3, 0.5) : 0.6
+  n  = rand_cf ? :bnoise         : :noise
+  synth :noise, release: 0.05, cutoff: co, res: 0.95, amp: a if level > 0
+  sample :elec_blip, amp: 2, rate: 2, pan: rrand(-0.8, 0.8) if level > 1
+  sleep 1
+end
+
+define :synths do |s_name, co, n=:e2|
+  use_synth s_name
+  use_transpose 0
+  use_synth_defaults detune: [12,24].choose, amp: 1, cutoff: co, pulse_width: 0.12, attack: rrand(0.2, 0.5), release: 0.5 ,  mod_phase: 0.25, mod_invert_wave: 1
+
+  play :e1, mod_range: [7, 12].choose, pan: rrand(-1, 1)
+  sleep 0.125
+
+  play :e3, mod_range: [7, 12].choose, pan: rrand(-1, 1)
+  sleep [0.25, 0.5].choose
+
+  play n, mod_range: 12, pan: rrand(-1, 1)
+  sleep 0.5
+
+  play chord(:e2, :minor).choose, mod_range: 12, pan: rrand(-1, 1)
+  sleep 0.25
+end
+
+define :play_synths do
+  with_fx :reverb do |r|
+    with_fx :echo, phase: 0.25 do |e|
+      synths = [:mod_pulse, :mod_saw, :mod_dsaw, :mod_dsaw, :mod_dsaw, :mod_dsaw]
+      cutoffs = [108, 78, 88, 98]
+      synth = synths.rotate!.first
+      4.times do |t|
+        puts shuffle("0" * (30 - t) + ("1" * t)) unless t == 0
+        co = cutoffs.rotate!.first + (t * 2)
+        7.times do
+          n = chord([:e2, :e3, :e4, :e5][t], :minor).choose
+          synths(synth, co, n)
+        end
+        sleep 2
+      end
+      sleep 1
+      cue :within
+    end
+  end
+end
+
+define :binary_celebration do |n=1, st=1|
+  in_thread do
+    n.times do
+      puts (0..30).map{|_| ["0", "1"].choose}.join
+      sleep st
+    end
+  end
+end
+
+puts 'Introduction'
+puts 'The Curved Ebb of Carpentry'
+sleep 2
+
+cue :oceans
+at [7, 12], [:crash, :within_oceans] do |m|
+  cue m
+end
+
+uncomment do
+  use_random_seed 1000
+  with_bpm 45 do
+    with_fx :reverb do
+      with_fx(:echo, delay: 0.5, decay: 4) do
+        in_thread do
+          use_random_seed 2
+          ocean 5
+          ocean 1, 0.5
+          ocean 1, 0.25
+        end
+        sleep 10
+        use_random_seed 1200
+        echoes(5, [:b1, :b2, :e1, :e2, :b3, :e3])
+        cue :a_distant_object
+        echoes(5, [:b1, :e1, :e2, :e3])
+        cue :breathes_time
+        in_thread do
+          echoes(5, [:e1, :e2, :e3])
+        end
+        use_synth :tb303
+        echoes(1, [:e1, :e2, :e3], 60, 0.9, 0.5)
+        echoes(1, [:e1, :e2, :e3], 62)
+        echoes(1, [:e1, :e2, :e3], 64, 0.97)
+        echoes(1, [:e1, :e2, :e3], 66)
+        echoes(1, [:e1, :e2, :e3], 68)
+        cue :liminality_holds_fast
+        echoes(4, [:b1, :e1, :e2, :b3, :e3], 80)
+        echoes(1, [:b1, :b2, :e1, :e2, :b3, :e3], 85,  0.98)
+        cue :within_reach
+        echoes(5, [:e1, :b2], 90)
+        cue :as_it_unfolds
+        in_thread do
+          echoes(5, [:e1], 90)
+        end
+      end
+    end
+  end
+end
+
+
+in_thread(name: :bassdrums) do
+  use_random_seed 0
+  sleep 22
+  3.times do
+    bd
+  end
+  sleep 28
+  live_loop :bd do
+    bd
+  end
+end
+
+in_thread(name: :drums) do
+  use_random_seed 0
+  level = -1
+  with_fx :echo do |e|
+    sleep 2
+    drums -1, 0.1
+    drums -1, 0.2
+    drums -1, 0.4
+    drums -1, 0.7
+    puts "Part 2"
+    puts "Inside the Machine"
+    3.times do
+      8.times do
+        drums level, 0.8
+      end
+      6.times do
+        drums(level)
+      end
+
+      sleep 1
+      level += 1
+    end
+    sleep 4
+    cue :dreams
+    8.times do
+      drums 1, 1, true
+    end
+
+    10.times do
+      m = choose [shuffle(:within_dreams), :within_dreams, :dreams_within]
+      cue m
+      drums 2, 1, true
+    end
+
+    6.times do
+      m = choose [shuffle("within") + "_dreams", :within_dreams.shuffle, "dreams_" + shuffle("within")]
+      cue m
+      drums 2
+    end
+
+    live_loop :drums do
+      8.times do |i|
+        drums 1
+      end
+
+      16.times do |i|
+        cue " " * rand_i(32)
+        at 1 do
+          cue "  " * i
+        end
+        drums 2
+      end
+    end
+  end
+end
+
+in_thread name: :synths do
+  use_random_seed 0
+  sleep 12
+  cue :the_flow_of_logic
+  play_synths
+end
+
+in_thread do
+  use_random_seed 0
+  sync :within
+  puts "Part 3"
+  puts "Reality A"
+  sleep 12
+  use_synth_defaults phase: 0.5, res: 0.5, cutoff: 80, release: 3.3, wave: 1
+
+  2.times do
+    [80, 90, 100, 110].each do |cf|
+      use_merged_synth_defaults cutoff: cf
+      puts "1" * 30
+      synth :zawa, note: :e2, phase: 0.25
+      synth :zawa, note: :a1
+      sleep 3
+    end
+    4.times do |t|
+      binary_celebration(6, 0.5)
+      synth :zawa, note: :e2, phase: 0.25, res: rrand(0.8, 0.9), cutoff: [100, 105, 110, 115][t]
+      sleep 3
+    end
+  end
+
+  puts 'Part n'
+  puts 'The Observer becomes the Observed'
+  # Your turn...
+end
+
+
+// algomancer/cloud_beat.pi
+# Coded by SonicPit
+#
+# Taken from "Beats basteln wie die Großen"
+# c't 13/2017
+
+# Note: requires a powerful machine to run smoothly.
+
+use_bpm 100
+
+# HISS
+live_loop :hiss_loop do
+  sample :vinyl_hiss, amp: 2
+  sleep sample_duration :vinyl_hiss
+end
+
+# HIHAT
+define :hihat do
+  use_synth :pnoise
+  with_fx :hpf, cutoff: 120 do
+    play release: 0.01, amp: 13
+  end
+end
+
+live_loop :hihat_loop do
+  divisors = ring 2, 4, 2, 2, 2, 2, 2, 6
+  divisors.tick.times do
+    hihat
+    sleep 1.0 / divisors.look
+  end
+end
+
+# SNARE
+live_loop :snare_loop do
+  sleep ring(2.5, 3)[tick]
+  with_fx :lpf, cutoff: 100 do
+    sample :sn_dub, sustain: 0, release: 0.05, amp: 3
+  end
+  sleep ring(1.5, 1)[look]
+end
+
+# BASSDRUM
+define :bassdrum do |note1, duration, note2 = note1|
+  use_synth :sine
+  with_fx :hpf, cutoff: 100 do
+    play note1 + 24, amp: 40, release: 0.01
+  end
+  with_fx :distortion, distort: 0.1, mix: 0.3 do
+    with_fx :lpf, cutoff: 26 do
+      with_fx :hpf, cutoff: 55 do
+        bass = play note1, amp: 85, release: duration, note_slide: duration
+        control bass, note: note2
+      end
+    end
+  end
+  sleep duration
+end
+
+live_loop :bassdrum_schleife do
+  bassdrum 36, 1.5
+  if bools(0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0)[tick]
+    bassdrum 36, 0.5, 40
+    bassdrum 38, 1, 10
+  else
+    bassdrum 36, 1.5
+  end
+  bassdrum 36, 1.0, ring(10, 10, 10, 40)[look]
+end
+
+# CHORD CONTROL
+# This part provides two rings called "chord_high" and "chord_low".
+# They always contain the "permitted" notes in order that everything will be in tune.
+# You can use them in other live loops to select notes.
+
+chord_1 = chord :c4, :maj9, num_octaves: 2
+chord_2 = chord :es4, :maj9, num_octaves: 2
+chord_3 = chord :b3, :maj9, num_octaves: 2
+chord_4 = chord :d4, :maj9, num_octaves: 2
+
+chord_low_1 = chord :c2, :maj9
+chord_low_2 = chord :es2, :maj9
+chord_low_3 = chord :b1, :maj9
+chord_low_4 = chord :d2, :maj9
+
+chord_high = chord_1
+chord_low = chord_low_1
+
+live_loop :chord_selector, delay: -0.5 do
+  chord_high = (knit(chord_1, 2, chord_2, 2, chord_3, 4,chord_4, 4)).tick
+  chord_low = (knit(chord_low_1, 2, chord_low_2, 2, chord_low_3, 4, chord_low_4, 4)).look
+  sleep 8
+end
+
+# SPHERES
+define :chord_player do |the_chord|
+  use_synth :blade
+  the_chord.each do |note|
+    play note, attack: rand(4), release: rand(6..8), cutoff: rand(50..85), vibrato_rate: rand(0.01..2), amp: 0.55
+  end
+end
+
+with_fx :reverb, room: 0.99, mix: 0.7 do
+  live_loop :chord_loop do
+    chord_player chord_high.pick(6)
+    chord_player chord_low.take(3)
+    sleep 8
+  end
+end
+
+# Coded by Pit Noack
+# supported by
+# Alexander Degraf
+# Astrid Hagenguth
+# Enrico Mercaldi
+# http://www.maschinennah.de/
+# mail@pitnoack.de
+
+
+// apprentice/haunted.pi
+# Coded by Sam Aaron
+
+live_loop :haunted do
+  sample :perc_bell, rate: rrand(-1.5, 1.5)
+  sleep rrand(0.1, 2)
+end
+
+
+// illusionist/filtered_dnb.pi
+# Coded by Sam Aaron
+
+use_sample_bpm :loop_amen
+
+with_fx :rlpf, cutoff: 10, cutoff_slide: 4 do |c|
+  live_loop :dnb do
+    sample :bass_dnb_f, amp: 5
+    sample :loop_amen, amp: 5
+    sleep 1
+    control c, cutoff: rrand(40, 120), cutoff_slide: rrand(1, 4)
+  end
+end
+
+
+// illusionist/ocean.pi
+# Coded by Sam Aaron
+
+with_fx :reverb, mix: 0.5 do
+  live_loop :oceans do
+    s = synth [:bnoise, :cnoise, :gnoise].choose, amp: rrand(0.5, 1.5), attack: rrand(0, 4), sustain: rrand(0, 2), release: rrand(1, 5), cutoff_slide: rrand(0, 5), cutoff: rrand(60, 100), pan: rrand(-1, 1), pan_slide: rrand(1, 5), amp: rrand(0.5, 1)
+    control s, pan: rrand(-1, 1), cutoff: rrand(60, 110)
+    sleep rrand(2, 4)
+  end
+end
+
+
+// illusionist/chord_inversions.pi
+# Coded by Adrian Cheater
+
+# (in a single tweet)
+# https://twitter.com/wpgFactoid/status/666692596605976576
+
+[1, 3, 6, 4].each do |d|
+  (range -3, 3).each do |i|
+    play_chord (chord_degree d, :c, :major, 3, invert: i)
+    sleep 0.25
+  end
+end
+
+
+// illusionist/fm_noise.pi
+# Coded by Sam Aaron
+
+use_synth :fm
+
+live_loop :sci_fi do
+  p = play (chord :Eb3, :minor).choose - [0, 12, -12].choose, divisor: 0.01, div_slide: rrand(0, 10), depth: rrand(0.001, 2), attack: 0.01, release: rrand(0, 5), amp: 0.5
+  control p, divisor: rrand(0.001, 50)
+  sleep [0.5, 1, 2].choose
+end
+
+
+// illusionist/jungle.pi
+# Coded by Sam Aaron
+use_bpm 50
+
+with_fx :lpf, cutoff: 90 do
+  with_fx :reverb, mix: 0.5 do
+    with_fx :compressor, pre_amp: 40 do
+      with_fx :distortion, distort: 0.4 do
+        live_loop :jungle do
+          use_random_seed 667
+          4.times do
+            sample :loop_amen, beat_stretch: 1, rate: [1, 1, 1, -1].choose / 2.0, finish: 0.5, amp: 0.5
+            sample :loop_amen, beat_stretch: 1
+            sleep 1
+          end
+        end
+      end
+    end
+  end
+end
+
+
+// illusionist/ambient_experiment.pi
+# Coded by Darin Wilson
+#
+# The piece consists of three long loops, each of which
+# plays one of two randomly selected pitches. Each note
+# has different attack, release and sleep values, so that
+# they move in and out of phase with each other. This can
+# play for quite awhile without repeating itself :)
+
+use_synth :hollow
+with_fx :reverb, mix: 0.7 do
+
+  live_loop :note1 do
+    play choose([:D4,:E4]), attack: 6, release: 6
+    sleep 8
+  end
+
+  live_loop :note2 do
+    play choose([:Fs4,:G4]), attack: 4, release: 5
+    sleep 10
+  end
+
+  live_loop :note3 do
+    play choose([:A4, :Cs5]), attack: 5, release: 5
+    sleep 11
+  end
+
+end
+
+
+// illusionist/reich_phase.pi
+# Steve Reich's Piano Phase
+# See: https://en.wikipedia.org/wiki/Piano_Phase
+
+# use_synth :piano
+notes = (ring :E4, :Fs4, :B4, :Cs5, :D5, :Fs4, :E4, :Cs5, :B4, :Fs4, :D5, :Cs5)
+
+live_loop :slow do
+  play notes.tick, release: 0.1
+  sleep 0.3
+end
+
+live_loop :faster do
+  play notes.tick, release: 0.1
+  sleep 0.295
+end
+
+
+// incubation/mod_303_phade.pi
+use_synth :tb303
+
+live_loop :foo do
+  sleep 0.5
+end
+
+sync :foo
+
+with_fx :reverb do
+  with_fx :slicer, phase: 0.5, wave: 0, invert_wave: 1 do
+    play 50 - 24, cutoff: 120, cutoff_attack: 0.3, res: 0.93, release: 60
+  end
+end
+
+
+// incubation/syncer.pi
+in_thread do
+  loop do
+    cue :tick
+    sleep 1
+  end
+end
+
+in_thread do
+  loop do
+    sync :tick
+    sample :drum_heavy_kick
+  end
+end
+
+in_thread do
+  use_synth :mod_saw
+  loop do
+    sync :tick
+    play chord(:e1, :minor).choose, mod_phase: [1, 0.5, 0.25, 0.125].choose, cutoff: rrand(80, 110)
+  end
+end
+
+
+// incubation/dark_neon.pi
+# Coded by Sam Aaron
+
+live_loop :foo do
+  sample :bd_haus, amp: 5, cutoff: 50, amp: 5, release: 0.1
+  sleep 0.5
+end
+
+live_loop :mel do
+  with_fx :wobble, phase: 1, invert_wave: 1, wave: 0, cutoff_max: 80, cutoff_min: 60 do
+    synth :blade, note: :cs1, release: 4, cutoff: 110, amp: 1, pitch_shift: 0
+  end
+  with_fx :reverb, room: 1 do
+    with_fx :bitcrusher, mix: 0.4 do
+      sample :bass_trance_c, rate: 0.5, pitch: 0, window_size: 0.125, time_dis: 0.125, amp: 8, release: 0.2
+    end
+  end
+  sleep 4
+end
+
+
+// incubation/crushed.pi
+with_fx :bitcrusher do
+  loop do
+    use_synth :mod_fm
+    play 50 + [5, 0].choose, mod_phase: 0.25, release: 1, mod_range: [24, 27, 12].choose
+    sleep 0.5
+    use_synth :mod_dsaw
+    play 50, mod_phase: 0.25, release: 1.5, mod_range: [24, 27].choose, attack: 0.5
+    sleep 1.5
+  end
+end
+
+
+// incubation/orchard_improv.pi
+# Welcome to Sonic Pi v2.0
+
+pent = [#:B1, :Cs2, :Ds2,
+        :Fs2, :Gs2, :As2,
+        :B2,
+        :Cs3, :Ds3, :Fs3, :Gs3, :As3,
+        :B3,
+        :Cs4, :Ds4, :Fs4, :Gs4, :As4,
+        :B4,
+        :Cs5, :Ds5, :Fs5, :Gs5, :As5,
+        :B5,
+        :Cs6, :Ds6, :Fs6, :Gs6, :As6]
+
+use_synth :tri
+with_fx :reverb, rate: 0.2 do
+  i = 15
+  t = 0.28
+  stack = []
+  100.times do
+    mode = rrand_i(0,2)
+    lene = rrand_i(0,4)*2
+    if mode==2 then
+      direction = rrand_i(0,1)*2 - 1
+      tp = (t*4)/lene #(t/2 + (t)*rrand_i(0,1))
+      local_stack = []
+      direction = -1 if (lene + i >= pent.length)
+      direction = 1 if (i - lene <= 0)
+      lene.to_int.times do
+        notes = [i]
+        notes.push(i+4) if rrand_i(0,3) == 1 && (i+4 < pent.length)
+        notes.push(i-4) if rrand_i(0,3) == 1 && (i-4 >= 0)
+        notes.push(i+2) if rrand_i(0,6) == 3 && (i+2 < pent.length)
+        notes.push(i-2) if rrand_i(0,6) == 3 && (i-2 >= 0)
+        notes.each do |note|
+          play pent[note]
+        end
+        sleep tp
+        i = (i + direction).abs
+        local_stack.push([notes,tp])
+      end
+      stack.push(local_stack)
+    else
+      print "repeat mode"
+      transp = rrand_i(0,4)-2
+      if stack != [] then
+        stack.last.each do |notes, tp|
+          notes.each do |note|
+            if ((note + transp >= 0) && (note + transp < pent.length)) then
+              play pent[note + transp]
+            end
+          end
+          sleep tp
+        end
+      end
+    end
+  end
+end
+
+
+// magician/idm_breakbeat.pi
+# Coded by Sam Aaron
+
+live_loop :idm_bb do
+  n = [1,2,4,8,16].choose
+  sample :drum_heavy_kick, amp: 2
+  sample :ambi_drone, rate: [0.25, 0.5, 0.125, 1].choose, amp: 0.25 if one_in(8)
+  sample :ambi_lunar_land, rate: [0.5, 0.125, 1, -1, -0.5].choose, amp: 0.25 if one_in(8)
+  sample :loop_amen, attack: 0, release: 0.05, start: 1 - (1.0 / n), rate: [1,1,1,1,1,1,-1].choose
+  sleep sample_duration(:loop_amen) / n
+end
+
+
+// magician/wob_rhyth.pi
+# Coded by Sam Aaron
+
+use_debug false
+
+with_fx :reverb do
+  live_loop :choral do
+    r = (ring 0.5, 1.0/3, 3.0/5).choose
+    cue :choir, rate: r
+    8.times do
+      sample :ambi_choir, rate: r, pan: rrand(-1, 1)
+      sleep 0.5
+    end
+  end
+end
+
+
+live_loop :wub_wub do
+  with_fx :wobble, phase: 2, reps: 16 do |w|
+    with_fx :echo, mix: 0.6 do
+      sample :drum_heavy_kick
+      sample :bass_hit_c, rate: 0.8, amp: 0.4
+      sleep 1
+      ## try changing the wobble's phase duration:
+      # control w, phase: (ring 0.5, 1, 2).choose
+    end
+  end
+end
+
+
+// magician/acid.pi
+# Coded by Sam Aaron
+
+use_debug false
+load_sample :bd_fat
+
+8.times do
+  sample :bd_fat, amp: (line 0, 5, steps: 8).tick
+  sleep 0.5
+end
+
+live_loop :drums do
+  sample :bd_fat, amp: 5
+  sleep 0.5
+end
+
+live_loop :acid do
+  cue :foo
+  4.times do |i|
+    use_random_seed 667
+    16.times do
+      use_synth :tb303
+      play chord(:e3, :minor).choose, attack: 0, release: 0.1, cutoff: rrand_i(50, 90) + i * 10
+      sleep 0.125
+    end
+  end
+
+  cue :bar
+  32.times do |i|
+    use_synth :tb303
+    play chord(:a3, :minor).choose, attack: 0, release: 0.05, cutoff: rrand_i(70, 98) + i, res: rrand(0.9, 0.95)
+    sleep 0.125
+  end
+
+  cue :baz
+  with_fx :reverb, mix: 0.3 do |r|
+    32.times do |m|
+      control r, mix: 0.3 + (0.5 * (m.to_f / 32.0)) unless m == 0 if m % 8 == 0
+      use_synth :prophet
+      play chord(:e3, :minor).choose, attack: 0, release: 0.08, cutoff: rrand_i(110, 130)
+      sleep 0.125
+    end
+  end
+
+  cue :quux
+  in_thread do
+    use_random_seed 668
+    with_fx :echo, phase: 0.125 do
+      16.times do
+        use_synth :tb303
+        play chord(:e3, :minor).choose, attack: 0, release: 0.1, cutoff: rrand(50, 100)
+        sleep 0.25
+      end
+    end
+  end
+
+  sleep 4
+end
+
+
+// magician/tron_bike.pi
+# Coded by Sam Aaron
+
+use_random_seed 10
+notes =  (ring :b1, :b2, :e1, :e2, :b3, :e3)
+
+live_loop :tron do
+  with_synth :dsaw do
+    with_fx(:slicer, phase: [0.25,0.125].choose) do
+      with_fx(:reverb, room: 0.5, mix: 0.3) do
+
+        n1 = (chord notes.choose, :minor).choose
+        n2 = (chord notes.choose, :minor).choose
+
+        p = play n1, amp: 2, release: 8, note_slide: 4, cutoff: 30, cutoff_slide: 4, detune: rrand(0, 0.2)
+        control p, note: n2, cutoff: rrand(80, 120)
+      end
+    end
+  end
+
+  sleep 8
+end
+
+
+// magician/echo_drama.pi
+# Coded by Sam Aaron
+
+use_synth :tb303
+use_bpm 45
+use_random_seed 3
+use_debug false
+
+with_fx :reverb do
+  with_fx(:echo, delay: 0.5, decay: 4) do
+    live_loop :echoes do
+      play chord([:b1, :b2, :e1, :e2, :b3, :e3].choose, :minor).choose, cutoff: rrand(40, 100), amp: 0.5, attack: 0, release: rrand(1, 2), cutoff_max: 110
+      sleep [0.25, 0.5, 0.5, 0.5, 1, 1].choose
+    end
+  end
+end
+
+
+// magician/compus_beats.pi
+# Coded by Sam Aaron
+
+use_sample_bpm :loop_compus, num_beats: 4
+
+live_loop :loopr do
+  sample :loop_compus, rate: [0.5, 1, 1, 1, 1, 2].choose unless one_in(10)
+  sleep 4
+end
+
+live_loop :bass do
+  sample :bass_voxy_c, amp: rrand(0.1, 0.2), rate: [0.5, 0.5, 1, 1,2,4].choose if one_in(4)
+  use_synth :mod_pulse
+  use_synth_defaults mod_invert_wave: 1
+  play :C1, mod_range: 12, amp: rrand(0.5, 1), mod_phase: [0.25, 0.5, 1].choose, release: 1, cutoff: rrand(50, 90)
+  play :C2, mod_range: [24, 36, 34].choose, amp: 0.35, mod_phase: 0.25, release: 2, cutoff: 60, pulse_width: rand
+  sleep 1
+end
+
+
+// magician/ambient.pi
+# Coded by Sam Aaron
+
+load_samples(sample_names :ambi)
+sleep 2
+
+with_fx :reverb, mix: 0.8 do
+  live_loop :foo do
+    # try changing the sp_ vars..
+    sp_name = choose sample_names :ambi
+    # sp_name = choose sample_names :drum
+    sp_time = [1, 2].choose
+    #sp_time = 0.5
+    sp_rate = 1
+    #sp_rate = 4
+
+    s = sample sp_name, cutoff: rrand(70, 130), rate: sp_rate * choose([0.5, 1]), pan: rrand(-1, 1), pan_slide: sp_time
+    control s, pan: rrand(-1, 1)
+    sleep sp_time
+  end
+end
+
+
+// sorcerer/driving_pulse.pi
+# Coded by Sam Aaron
+
+load_sample :drum_heavy_kick
+
+live_loop :drums do
+  sample :drum_heavy_kick, rate: 0.75
+  sleep 0.5
+  sample :drum_heavy_kick
+  sleep 0.5
+end
+
+live_loop :synths do
+  use_synth :mod_pulse
+  use_synth_defaults amp: 1, mod_range: 15, cutoff: 80, pulse_width: 0.2, attack: 0.03, release: 0.6,  mod_phase: 0.25, mod_invert_wave: 1
+  play 30
+  sleep 0.25
+  play 38
+  sleep 0.25
+end
+
+
+// sorcerer/monday_blues.pi
+# Coded by Sam Aaron
+
+use_debug false
+load_samples [:drum_heavy_kick, :drum_snare_soft]
+
+
+live_loop :drums do
+  puts "slow drums"
+  6.times do
+    sample :drum_heavy_kick, rate: 0.8
+    sleep 0.5
+  end
+
+  puts "fast drums"
+  8.times do
+    sample :drum_heavy_kick, rate: 0.8
+    sleep 0.125
+  end
+end
+
+live_loop :synths, delay: 6 do
+  puts "how does it feel?"
+  use_synth :mod_saw
+  use_synth_defaults amp: 0.5, attack: 0, sustain: 1, release: 0.25, mod_range: 12, mod_phase: 0.5, mod_invert_wave: 1
+  notes = (ring :F, :C, :D, :D, :G, :C, :D, :D)
+  notes.each do |n|
+    tick
+    play note(n, octave: 1), cutoff: (line 90, 130, steps: 16).look
+    play note(n, octave: 2), cutoff: (line 90, 130, steps: 32).look
+    sleep 1
+  end
+end
+
+live_loop :snare, delay: 12.5 do
+  sample :drum_snare_soft
+  sleep 1
+end
+
+
+// sorcerer/rerezzed.pi
+# Coded by Sam Aaron
+
+use_debug false
+notes = (scale :e1, :minor_pentatonic, num_octaves: 2).shuffle
+
+live_loop :rerezzed do
+  tick_reset
+  t = 0.04
+  sleep -t
+  with_fx :bitcrusher do
+    s = synth :dsaw, note: :e3, sustain: 8, note_slide: t, release: 0
+    64.times do
+      sleep 0.125
+      control s, note: notes.tick
+    end
+  end
+  sleep t
+end
+
+live_loop :industry do
+  sample :loop_industrial, beat_stretch: 1
+  sleep 1
+end
+
+live_loop :drive do
+  sample :bd_haus, amp: 3
+  sleep 0.5
+end
+
+
+// sorcerer/square_skit.pi
+# Coded by Sam Aaron
+
+use_debug false
+
+live_loop :skit do
+  with_fx :slicer, phase: 1, invert_wave: 1, wave: 0 do
+    with_fx :slicer, wave: 0, phase: 0.25 do
+      sample :loop_mika, rate: 1, amp: 2
+    end
+    sleep 8
+  end
+end
+
+live_loop :foo, auto_cue: false do
+  tick(:note) if factor? tick, 4
+  use_synth :square
+  density 2 do
+    play (knit :c2, 2, :e1, 1, :f3, 1).look(:note), release: 0, attack: 0.25, amp: 1, cutoff: rrand_i(70, 130)
+    sleep 0.5
+  end
+end
+
+live_loop :kik, auto_cue: false do
+  density 1 do
+    sample :bd_haus, amp: 2
+    sleep 0.5
+  end
+end
+
+live_loop :piano, auto_cue: false do
+  sleep 4
+  with_fx :slicer, phase: 0.25, wave: 1 do
+    sleep 4
+    sample :ambi_piano, amp: 2
+  end
+end
+
+
+// sorcerer/bach.pi
+# Bach Minuet in G
+#
+# Coded by Robin Newman
+
+use_bpm 60
+use_synth_defaults release: 0.5, amp: 0.7, cutoff: 90
+use_synth :beep
+
+## Each section of the minuet is repeated
+2.times do
+
+  ## First start a thread for the first 8 bars of the bass left hand part
+  in_thread do
+    play_chord [55,59]#b1
+    sleep 1
+    play_pattern_timed [57],[0.5]
+    play_pattern_timed [59],[1.5] #b2
+    play_pattern_timed [60],[1.5] #b3
+    play_pattern_timed [59],[1.5] #b4
+    play_pattern_timed [57],[1.5] #b5
+    play_pattern_timed [55],[1.5] #b6
+    play_pattern_timed [62,59,55],[0.5] #b7
+    play_pattern_timed [62],[0.5] #b8
+    play_pattern_timed [50,60,59,57],[0.25]
+  end
+
+  ## Play concurrently the first 8 bars of the right hand part
+  play_pattern_timed [74],[0.5]#b1
+  play_pattern_timed [67,69,71,72],[0.25]
+  play_pattern_timed [74,67,67],[0.5]#b2
+  play_pattern_timed [76],[0.5]#b3
+  play_pattern_timed [72,74,76,78],[0.25]
+  play_pattern_timed [79,67,67],[0.5]#b4
+  play_pattern_timed [72],[0.5] #b5
+  play_pattern_timed [74,72,71,69],[0.25]
+  play_pattern_timed [71],[0.5] #b6
+  play_pattern_timed [72,71,69,67],[0.25]
+  play_pattern_timed [66],[0.5] #b7
+  play_pattern_timed [67,69,71,67],[0.25]
+  play_pattern_timed [71,69],[0.5,1] #b8
+
+  ## Start a new thread for bars 9-16 of the left hand part
+  in_thread do
+    play_chord [55,59]#b9=b1
+    sleep 1
+    play 57
+    sleep 0.5
+    play_pattern_timed [55,59,55],[0.5] #b10
+    play_pattern_timed [60],[1.5] #b11=b3
+    play_pattern_timed [59,60,59,57,5],[0.5,0.25,0.25,0.25,0.25] #b12=b4]
+    play_pattern_timed [57,54],[1,0.5] #b13
+    play_pattern_timed [55,59],[1,0.5] #b14
+    play_pattern_timed [60,62,50],[0.5] #b15
+    play_pattern_timed [55,43],[1,0.5] #b16
+  end
+
+  ## Play concurrently bars 9-16 of the right hand part the first six
+  ## bars repeat bars 1-6
+  play_pattern_timed [74],[0.5]#b9 = b1
+  play_pattern_timed [67,69,71,72],[0.25]
+  play_pattern_timed [74,67,67],[0.5]#b10=b2
+  play_pattern_timed [76],[0.5]#b11=b3
+  play_pattern_timed [72,74,76,78],[0.25]
+  play_pattern_timed [79,67,67],[0.5]#b12=b4
+  play_pattern_timed [72],[0.5] #b13=b5
+  play_pattern_timed [74,72,71,69],[0.25]
+  play_pattern_timed [71],[0.5] #b14=b6
+  play_pattern_timed [72,71,69,67],[0.25]
+  play_pattern_timed [69],[0.5] #b15
+  play_pattern_timed [71,69,67,66],[0.25]
+  play_pattern_timed [67],[1.5] #b16
+end
+
+
+## ==========second section starts here======
+## The second section is also repeated
+2.times do
+
+  ## Start a thread for bars 17-24 of the left hand part
+  in_thread do
+    play_pattern_timed [55],[1.5] #b17
+    play_pattern_timed [54],[1.5] #b18
+    play_pattern_timed [52,54,52],[0.5] #b19
+    play_pattern_timed [57,45],[1,0.5] #b20
+    play_pattern_timed [57],[1.5] #b21
+    play_pattern_timed [59,62,61],[0.5] #b22
+    play_pattern_timed [62,54,57],[0.5] #b23
+    play_pattern_timed [62,50,60],[0.5] #b24
+  end
+
+  ## Play bars 17 to 24 of the right hand concurrently with the left
+  ## hand thread
+  play_pattern_timed [83],[0.5] #b17
+  play_pattern_timed [79,81,83,79],[0.25]
+  play_pattern_timed [81],[0.5] #b18
+  play_pattern_timed [74,76,78,74],[0.25]
+  play_pattern_timed [79],[0.5] #b19
+  play_pattern_timed [76,78,79,74],[0.25]
+  play_pattern_timed [73,71,73,69],[0.5,0.25,0.25,0.5] #b20
+  play_pattern_timed [69,71,73,74,76,78],[0.25] #b21
+  play_pattern_timed [79,78,76],[0.5] #b22
+  play_pattern_timed [78,69,73],[0.5] #b23
+  play 74 #b24
+  sleep 1.5
+
+  ## Start a new thread for bars 25-32 of the left hand part
+  in_thread do
+    play_pattern_timed [59,62,59],[0.5] #b25
+    play_pattern_timed [60,64,60],[0.5] #b26
+    play_pattern_timed [59,57,55],[0.5] #b27
+    play 62 #b28
+    sleep 1.5 #includes a rest
+    play_pattern_timed [50,54],[1,0.5] #b29
+    play_pattern_timed [52,55,54],[0.5] #b30
+    play_pattern_timed [55,47,50],[0.5] #b31
+    play_pattern_timed [55,50,43],[0.5] #b32
+  end
+
+  ## Play bars 25-32 of the right hand part concurrently with the left
+  ## hand thread
+  play_pattern_timed [74,67,66,67],[0.5,0.25,0.25,0.5] #b25
+  play_pattern_timed [76,67,66,67],[0.5,0.25,0.25,0.5] #b26
+  play_pattern_timed [74,72,71],[0.5] #b27
+  play_pattern_timed [69,67,66,67,69],[0.25,0.25,0.25,0.25,0.5] #b28
+  play_pattern_timed [62,64,66,67,69,71],[0.25] #b29
+  play_pattern_timed [72,71,69],[0.5] #b30
+  play_pattern_timed [71,74,67,66],[0.25,0.25,0.5,0.5] #b31
+  play_chord [67,59] #b32
+  sleep 1.5
+end
+
+
+// wizard/blimp_zones.pi
+# Coded by Sam Aaron
+
+use_debug false
+use_random_seed 667
+load_sample :ambi_lunar_land
+sleep 1
+
+live_loop :foo do
+  with_fx :reverb, kill_delay: 0.2, room: 0.3 do
+    4.times do
+      use_random_seed 4000
+      8.times do
+        sleep 0.25
+        play chord(:e3, :m7).choose, release: 0.1, pan: rrand(-1, 1, res: 0.9), amp: 1
+      end
+    end
+  end
+end
+
+live_loop :bar, auto_cue: false do
+  if rand < 0.25
+    sample :ambi_lunar_land
+    puts :comet_landing
+  end
+  sleep 8
+end
+
+live_loop :baz, auto_cue: false do
+  tick
+  sleep 0.25
+  cue :beat, count: look
+  sample :bd_haus, amp: factor?(look, 8) ? 3 : 2
+  sleep 0.25
+  use_synth :fm
+  play :e2, release: 1, amp: 1 if factor?(look, 4)
+  synth :noise, release: 0.051, amp: 0.5
+end
+
+
+// wizard/tilburg_2.pi
+# Coded by Sam Aaron
+
+use_debug false
+load_samples :guit_em9, :bd_haus
+
+live_loop :low do
+  tick
+  synth :zawa, wave: 1, phase: 0.25, release: 5, note: (knit :e1, 12, :c1, 4).look, cutoff: (line 60, 120, steps: 6).look
+  sleep 4
+end
+
+with_fx :reverb, room: 1 do
+  live_loop :lands, auto_cue: false do
+    use_synth :dsaw
+    use_random_seed 310003
+    ns = (scale :e2, :minor_pentatonic, num_octaves: 4).take(4)
+    16.times do
+      play ns.choose, detune: 12, release: 0.1, amp: 2, amp: rand + 0.5, cutoff: rrand(70, 120), amp: 2
+      sleep 0.125
+    end
+  end
+end
+
+live_loop :fietsen do
+  sleep 0.25
+  sample :guit_em9, rate: -1
+  sleep 7.75
+end
+
+live_loop :tijd do
+  sample :bd_haus, amp: 2.5, cutoff: 100
+  sleep 0.5
+end
+
+live_loop :ind do
+  sample :loop_industrial, beat_stretch: 1
+  sleep 1
+end
+
+
+// wizard/shufflit.pi
+# Coded by Sam Aaron
+
+use_debug false
+use_random_seed 667
+load_sample :ambi_lunar_land
+sleep 1
+
+live_loop :travelling do
+  use_synth :beep
+  notes = scale(:e3, :minor_pentatonic, num_octaves: 1)
+  use_random_seed 679
+  tick_reset_all
+  with_fx :echo, phase: 0.125, mix: 0.4, reps: 16 do
+    sleep 0.25
+    play notes.choose, attack: 0, release: 0.1, pan: (range -1, 1, step: 0.125).tick, amp: rrand(2, 2.5)
+  end
+end
+
+live_loop :comet, auto_cue: false do
+  if one_in 4
+    sample :ambi_lunar_land
+    puts :comet_landing
+  end
+  sleep 8
+end
+
+live_loop :shuff, auto_cue: false do
+  with_fx :hpf, cutoff: 10, reps: 8 do
+    tick
+    sleep 0.25
+    sample :bd_tek, amp: factor?(look, 8) ? 6 : 4
+    sleep 0.25
+    use_synth :tb303
+    use_synth_defaults cutoff_attack: 1, cutoff_release: 0, env_curve: 2
+    play (knit :e2, 24, :c2, 8).look, release: 1.5, cutoff: (range 70, 90).look, amp: 2 if factor?(look, 2)
+    sample :sn_dub, rate: -1, sustain: 0, release: (knit 0.05, 3, 0.5, 1).look
+  end
+end
+
+
+// wizard/blip_rhythm.pi
+# Coded by Sam Aaron
+
+load_samples [:drum_heavy_kick, :elec_plip, :elec_blip]
+use_bpm 100
+use_random_seed 100
+
+with_fx :reverb, mix: 0.6, room: 0.8 do
+  with_fx :echo, room: 0.8, decay: 8, phase: 1, mix: 0.4 do
+    live_loop :blip do
+      n = [:e2, :e2, :a3].choose
+
+      with_synth :dsaw do
+        with_transpose -12 do
+          in_thread do
+            2.times do
+              play n, attack: 0.6, release: 0.8, detune: rrand(0, 0.1), cutoff: rrand(80, 120)
+              sleep 3
+            end
+          end
+        end
+      end
+
+      sleep 4
+
+      with_synth :tri do
+        play chord(n, :m7), amp: 5, release: 0.8
+      end
+
+      sleep 2
+    end
+  end
+end
+
+
+with_fx :echo, room: 0.8, decay: 8, phase: 0.25, mix: 0.4 do
+  live_loop :rhythm do
+    sample :drum_heavy_kick, amp: 0.5
+    sample :elec_plip, rate: [0.5, 2, 1, 4].choose * [1, 2, 3, 10].choose, amp: 0.6
+    sleep 2
+  end
+end
+
+
+// wizard/time_machine.pi
+# Coded by Sam Aaron
+
+use_debug false
+
+live_loop :time do
+  synth :tb303, release: 8, note: :e1, cutoff: (range 90, 60, -10).tick
+  sleep 8
+end
+
+live_loop :machine do
+  sample :loop_garzul, rate: (knit 1, 3, -1, 1).tick
+  sleep 8
+end
+
+live_loop :vortex, auto_cue: false do
+  use_synth [:pulse, :beep].choose
+  sleep 0.125 / 2
+  play scale(:e1, :minor_pentatonic).tick, attack: 0.125, release: 0, amp: 2, cutoff: (ring 70, 90, 100, 130).look
+  sleep 0.125 / 2
+end
+
+live_loop :moon_bass, auto_cue: false do
+  sample :bd_haus, amp: 1.5
+  sleep 0.5
+end
+
+
