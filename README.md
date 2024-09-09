@@ -2,6 +2,8 @@
 
 Sonic Pi Controller is an interactive web application that allows users to create and manipulate music using Sonic Pi through a chat-like interface powered by AI. This project combines the creativity of live coding music with the intelligence of large language models to create a unique music generation experience.
 
+![Sonic Pi Controller Demo](ss.png)
+
 ## Features
 
 - AI-powered chat interface for generating Sonic Pi code
