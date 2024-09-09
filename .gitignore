@@ -4,7 +4,7 @@ __pycache__/
 *.py[cod]
 
 # no need in parent
-sonic-pi-controller-ui/
+node_modules/
 
 # Distribution / packaging
 .Python
